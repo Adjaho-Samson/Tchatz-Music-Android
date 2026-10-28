@@ -1,0 +1,13 @@
+<resources>
+ <color name="brand_black">#08090B</color>
+ <style name="Theme.Tchatz" parent="android:style/Theme.Material.NoActionBar">
+  <item name="android:windowLightStatusBar">false</item>
+  <item name="android:windowBackground">@color/brand_black</item>
+  <item name="android:fontFamily">sans</item>
+ </style>
+ <style name="Theme.Tchatz.Start" parent="Theme.SplashScreen">
+  <item name="windowSplashScreenBackground">@color/brand_black</item>
+  <item name="windowSplashScreenAnimatedIcon">@drawable/brand_mark</item>
+  <item name="postSplashScreenTheme">@style/Theme.Tchatz</item>
+ </style>
+</resources>

@@ -1,0 +1,8 @@
+Tchatz Music — Android natif
+
+APK/Tchatz-Music-debug.apk : installation directe Android 8+.
+Tchatz-Music/ : projet source à envoyer sur GitHub, y compris .github et gradle.
+Lire Tchatz-Music/README.md pour toutes les instructions.
+15 tests JVM réussis, Lint sans erreur, APK compilé et signature vérifiée.
+Tests instrumentés compilés mais non exécutés sur appareil.
+Les limites et vérifications restantes sont documentées dans VERIFICATION.md.

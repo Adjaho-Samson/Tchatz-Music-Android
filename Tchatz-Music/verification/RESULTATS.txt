@@ -1,0 +1,16 @@
+Tchatz Music — vérifications exécutées le 28/10/2026
+
+:app:assembleDebug :app:testDebugUnitTest — BUILD SUCCESSFUL (40 s)
+JUnit : 15 tests, 0 échec, 0 erreur, 0 ignoré.
+:app:assembleDebugAndroidTest — BUILD SUCCESSFUL (32 s), tests compilés seulement.
+:app:lintDebug — BUILD SUCCESSFUL (39 s), 0 erreur, 27 avertissements.
+python3 scripts/check_project.py — OK.
+apksigner verify — Verifies ; schéma de signature v2 valide.
+
+APK : app/build/outputs/apk/debug/app-debug.apk
+Taille : 14821978 octets
+SHA-256 APK : 99595ce59ce95f051fed3e7b2b6d8c00e22052888c0c1cab6c07a8f280305e2b
+Identifiant : com.tchatz.music ; version 1.0.0 (1) ; min SDK 26 ; target 35.
+
+NON exécutés : tests instrumentés sur émulateur ou téléphone, recette audio matérielle, workflow GitHub distant.
+Voir VERIFICATION.md, TESTS-APPAREIL.md et README.md.

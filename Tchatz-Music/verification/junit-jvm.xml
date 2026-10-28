@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.tchatz.music.LibraryRulesTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-28T19:23:03" hostname="e2b.local" time="0.063">
+  <properties/>
+  <testcase name="titleSort" classname="com.tchatz.music.LibraryRulesTest" time="0.04"/>
+  <testcase name="durationSort" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="referenceOrder" classname="com.tchatz.music.LibraryRulesTest" time="0.009"/>
+  <testcase name="queueMove" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="deletedReference" classname="com.tchatz.music.LibraryRulesTest" time="0.0"/>
+  <testcase name="legacyPermission32" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="searchAlbum" classname="com.tchatz.music.LibraryRulesTest" time="0.003"/>
+  <testcase name="searchIgnoresCase" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="emptyLibrary" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="audioPermission33" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="albumSort" classname="com.tchatz.music.LibraryRulesTest" time="0.0"/>
+  <testcase name="addedSort" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="artistSort" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="invalidQueueMove" classname="com.tchatz.music.LibraryRulesTest" time="0.001"/>
+  <testcase name="noMatch" classname="com.tchatz.music.LibraryRulesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
