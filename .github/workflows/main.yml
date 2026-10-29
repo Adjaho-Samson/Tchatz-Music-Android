@@ -82,9 +82,13 @@ jobs:
           retention-days: 14
 
   device-tests:
-    name: Instrumented tests on Android emulator
+    name: Instrumented tests on Android API ${{ matrix.api-level }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [31, 35]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -101,7 +105,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
           disable-animations: true
@@ -126,7 +130,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Android-instrumentation
+          name: Android-instrumentation-api-${{ matrix.api-level }}
           path: |
             Tchatz-Music/app/build/reports/androidTests/
             Tchatz-Music/app/build/outputs/androidTest-results/

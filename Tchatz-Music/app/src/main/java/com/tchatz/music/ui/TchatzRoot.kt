@@ -86,9 +86,9 @@ import kotlinx.coroutines.withContext
  "File" -> QueueScreen(player,vm)
  "Paramètres" -> SettingsScreen(sort,compact,vm,{permission.launch(audioPermission)},{settings()},{folderPicker.launch(null)})
  else -> LazyColumn(Modifier.fillMaxSize().padding(horizontal=16.dp).testTag("main-list")) {
- fun LazyListScope.songs(list:List<Track>,playlistId:Long?=null) {
+ fun LazyListScope.songs(list:List<Track>,section:String,playlistId:Long?=null) {
   if(list.isEmpty()) item { Empty("Aucun morceau ici",if(all.isEmpty()) "Ajoutez des fichiers audio sur votre téléphone, autorisez l’accès puis actualisez. Les téléchargements privés de streaming ne sont pas accessibles." else "Ajoutez des morceaux ou modifiez votre recherche.") }
-  itemsIndexed(list,key={_,t -> t.uri}) { index,t -> TrackRow(t,t.uri in favoriteSet,compact,{vm.play(list,index)},{vm.favorite(t.uri)},{vm.enqueue(t)},{addTrack=t}) {
+  itemsIndexed(list,key={_,t -> "$section:${t.uri}"}) { index,t -> TrackRow(t,t.uri in favoriteSet,compact,{vm.play(list,index)},{vm.favorite(t.uri)},{vm.enqueue(t)},{addTrack=t}) {
    if(playlistId!=null) {
     IconButton(onClick={vm.move(playlistId,index,index-1)},enabled=index>0){Icon(Icons.Rounded.KeyboardArrowUp,"Monter")}
     IconButton(onClick={vm.move(playlistId,index,index+1)},enabled=index<list.lastIndex){Icon(Icons.Rounded.KeyboardArrowDown,"Descendre")}
@@ -100,17 +100,17 @@ import kotlinx.coroutines.withContext
  "Accueil" -> {
   item { Row(Modifier.fillMaxWidth().padding(top=16.dp),verticalAlignment=Alignment.CenterVertically) { Cover(player.artwork,Modifier.size(88.dp));Column(Modifier.padding(start=16.dp).weight(1f)){Text("VOTRE ESPACE SONORE",style=MaterialTheme.typography.labelSmall,color=colors.primary);Text("La musique.\nSans limites réseau.",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("${all.size} titres • 100 % local",color=colors.onSurfaceVariant)} } }
   item { Row { TextButton(onClick={page="Bibliothèque"}){Text("Bibliothèque")};TextButton(onClick={page="Lecteur"}){Text("Lecteur")};TextButton(onClick={page="Historique"}){Text("Historique")} }; if(player.uri!=null) { Section("À l’écoute");TextButton(onClick={page="Lecteur"}){Text("${player.title} — ${player.artist}")} } }
-  item { Section("Dernières écoutes") };songs(LibraryRules.resolve(history.take(5).map {it.uri},all))
-  item { Section("Récemment ajoutés") };songs(all.sortedByDescending {it.added}.take(5))
-  item { Section("Vos favoris") };songs(all.filter {it.uri in favoriteSet}.take(5))
+  item { Section("Dernières écoutes") };songs(LibraryRules.resolve(history.take(5).map {it.uri},all),"home-history")
+  item { Section("Récemment ajoutés") };songs(all.sortedByDescending {it.added}.take(5),"home-recent")
+  item { Section("Vos favoris") };songs(all.filter {it.uri in favoriteSet}.take(5),"home-favorites")
   item { Section("Playlists");playlists.forEach { p -> TextButton(onClick={selected=p;page="Playlists"}){Text(p.name)} };OutlinedButton(onClick={create=true}){Text("Créer une playlist")} }
  }
  "Bibliothèque" -> {
   item { Section("${all.size} morceaux");OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),label={Text("Titre, artiste, album…")},leadingIcon={Icon(Icons.Rounded.Search,null)},singleLine=true);SortPicker(sort,vm::setSort);Row { Button(onClick={vm.play(visible)},enabled=visible.isNotEmpty() && player.connected){Text("Tout écouter")};TextButton(onClick={vm.setCompact(!compact)}){Text(if(compact) "Pochettes" else "Liste compacte")} } }
-  songs(visible)
+  songs(visible,"library")
  }
- "Favoris" -> { val list=all.filter {it.uri in favoriteSet};item { Section("Favoris • ${list.size}");Button(onClick={vm.play(list)},enabled=list.isNotEmpty()){Text("Tout écouter")} };songs(list) }
- "Historique" -> { item { Section("Dernières écoutes");TextButton(onClick={clear=true}){Text("Effacer l’historique")} };songs(LibraryRules.resolve(history.map {it.uri},all)) }
+ "Favoris" -> { val list=all.filter {it.uri in favoriteSet};item { Section("Favoris • ${list.size}");Button(onClick={vm.play(list)},enabled=list.isNotEmpty()){Text("Tout écouter")} };songs(list,"favorites") }
+ "Historique" -> { item { Section("Dernières écoutes");TextButton(onClick={clear=true}){Text("Effacer l’historique")} };songs(LibraryRules.resolve(history.map {it.uri},all),"history") }
  "Playlists" -> {
   val p=selected
   if(p==null) {
