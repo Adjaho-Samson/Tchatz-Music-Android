@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.*
@@ -84,7 +85,7 @@ import kotlinx.coroutines.withContext
  "Lecteur" -> PlayerScreen(player,vm,{page="File"},favoriteSet.contains(player.uri))
  "File" -> QueueScreen(player,vm)
  "Paramètres" -> SettingsScreen(sort,compact,vm,{permission.launch(audioPermission)},{settings()},{folderPicker.launch(null)})
- else -> LazyColumn(Modifier.fillMaxSize().padding(horizontal=16.dp)) {
+ else -> LazyColumn(Modifier.fillMaxSize().padding(horizontal=16.dp).testTag("main-list")) {
  fun LazyListScope.songs(list:List<Track>,playlistId:Long?=null) {
   if(list.isEmpty()) item { Empty("Aucun morceau ici",if(all.isEmpty()) "Ajoutez des fichiers audio sur votre téléphone, autorisez l’accès puis actualisez. Les téléchargements privés de streaming ne sont pas accessibles." else "Ajoutez des morceaux ou modifiez votre recherche.") }
   itemsIndexed(list,key={_,t -> t.uri}) { index,t -> TrackRow(t,t.uri in favoriteSet,compact,{vm.play(list,index)},{vm.favorite(t.uri)},{vm.enqueue(t)},{addTrack=t}) {

@@ -106,6 +106,22 @@ jobs:
           target: google_apis
           disable-animations: true
           script: cd Tchatz-Music && ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace
+      - name: Annotate instrumentation failures
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in Path('Tchatz-Music/app/build/outputs/androidTest-results').rglob('*.xml'):
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for failure in root.iter('failure'):
+                  detail = ((failure.get('message') or '') + '\n' + (failure.text or ''))[:5000]
+                  detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+                  print(f'::error title=Android instrumentation failure::{detail}')
+          PY
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
