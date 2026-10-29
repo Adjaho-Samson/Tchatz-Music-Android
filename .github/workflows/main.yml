@@ -1,9 +1,12 @@
-
 name: Build Tchatz Music Android
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - master
+      - 'arena/9626101b-tchatz-music-android'
+  pull_request:
     branches:
       - master
 
@@ -12,35 +15,124 @@ permissions:
 
 jobs:
   build:
-    name: Compile Android application
+    name: Tests, Lint and debug APK
     runs-on: ubuntu-latest
-
+    timeout-minutes: 45
     defaults:
       run:
-        working-directory: Tchatz-Musique
-
+        working-directory: Tchatz-Music
     steps:
-      - name: Recuperer le code
-        uses: actions/checkout@v4
-
-      - name: Installer Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Configurer Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Autoriser Gradle Wrapper
+      - name: Check Android SDK packages on the hosted runner
+        run: |
+          set -euo pipefail
+          trap 'echo "::error::Android SDK setup failed; check ANDROID_HOME and sdkmanager output in the job log."' ERR
+          : "${ANDROID_HOME:?ANDROID_HOME is not set}"
+          if [[ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" || ! -x "$ANDROID_HOME/build-tools/35.0.0/aapt" ]]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+          fi
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/aapt"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make Gradle wrapper executable
         run: chmod +x gradlew
-
-      - name: Compiler l'APK
-        run: ./gradlew :app:assembleDebug
-
-      - name: Publier l'APK
+      - name: List Gradle tasks
+        run: ./gradlew --no-daemon :app:tasks --all
+      - name: Unit tests, Android Lint and debug APK
+        run: |
+          set -o pipefail
+          if ! ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace 2>&1 | tee gradle-build.log; then
+            python3 - <<'PY'
+          from pathlib import Path
+          lines = Path('gradle-build.log').read_text(errors='replace').splitlines()
+          details = '\n'.join(lines[-50:]).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print(f'::error title=Gradle build failed::{details}')
+          PY
+            exit 1
+          fi
+      - name: Verify APK
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk"
+          sha256sum "$apk"
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Tchatz-Music-debug-APK
-          path: Tchatz-Musique/app/build/outputs/apk/debug/app-debug.apk
+          path: Tchatz-Music/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-diagnostics
+          path: |
+            Tchatz-Music/gradle-build.log
+            Tchatz-Music/app/build/reports/
+            Tchatz-Music/app/build/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  device-tests:
+    name: Instrumented tests on Android API ${{ matrix.api-level }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [31, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make Gradle wrapper executable
+        run: chmod +x Tchatz-Music/gradlew
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: cd Tchatz-Music && ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace
+      - name: Annotate instrumentation failures
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in Path('Tchatz-Music/app/build/outputs/androidTest-results').rglob('*.xml'):
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for failure in root.iter('failure'):
+                  detail = ((failure.get('message') or '') + '\n' + (failure.text or ''))[:5000]
+                  detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+                  print(f'::error title=Android instrumentation failure::{detail}')
+          PY
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-instrumentation-api-${{ matrix.api-level }}
+          path: |
+            Tchatz-Music/app/build/reports/androidTests/
+            Tchatz-Music/app/build/outputs/androidTest-results/
+          if-no-files-found: warn
+          retention-days: 14
