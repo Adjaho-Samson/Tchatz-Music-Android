@@ -124,20 +124,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Exécuter les tests et publier la sortie en annotation
-        env:
-          SUPABASE_URL: https://hohxfwemcvpvtqnwwvds.supabase.co
-          SUPABASE_ANON_KEY: sb_publishable_yjOOCQ0FYRA993w5vu2hKg_gPEJlN9H
-        run: |
-          set +e
-          node Tchatz-Klassio/web/scripts/e2e.mjs > e2e.log 2>&1
-          status=$?
-          tail -c 5000 e2e.log | sed 's/%/%25/g; s///g' | awk '{printf "::error title=Tests Klassio::%s\n", $0}'
-          cat e2e.log
-          exit $status
-
-      - name: Parcours complet responsable / étudiant / enseignant / sécurité (repli)
-        if: false
+      - name: Tests fonctionnels réels (responsable, étudiant, enseignant, sécurité)
         env:
           SUPABASE_URL: https://hohxfwemcvpvtqnwwvds.supabase.co
           SUPABASE_ANON_KEY: sb_publishable_yjOOCQ0FYRA993w5vu2hKg_gPEJlN9H
