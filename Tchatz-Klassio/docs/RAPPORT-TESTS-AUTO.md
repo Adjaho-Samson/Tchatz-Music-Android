@@ -1,21 +1,21 @@
-# Rapport de tests Tchatz Klassio
+# Rapport de tests — Tchatz Klassio
 
-- Date : 2026-11-05T03:39:17Z
-- Commit : 982bff0460dcc5055f9edd40220a8248a8a46dce
-- Projet Supabase : https://hohxfwemcvpvtqnwwvds.supabase.co
+- Date : 2026-11-05T04:31:44Z
+- Commit : ea65092f8fb21b3151d17135b44967f63c3de978
+- Backend : https://hohxfwemcvpvtqnwwvds.supabase.co
 
 ```
 
 === TCHATZ KLASSIO — TESTS FONCTIONNELS RÉELS ===
 
 Projet : https://hohxfwemcvpvtqnwwvds.supabase.co
-Compte de test : qa.klassio.1793849939431@example.com
+Compte de test : qa.klassio.1793853085946@example.com
 
 OK   Test 1.1 — Inscription responsable — HTTP 200
 OK   Test 1.2 — Mot de passe incorrect rejeté — HTTP 400
 OK   Test 1.3 — Connexion responsable
-OK   Test 1.4 — Profil créé automatiquement — {"full_name":"QA Klassio","email":"qa.klassio.1793849939431@example.com"}
-OK   Test 2.1 — Classe créée avec code généré — code CA6SM9JK
+OK   Test 1.4 — Profil créé automatiquement — {"full_name":"QA Klassio","email":"qa.klassio.1793853085946@example.com"}
+OK   Test 2.1 — Classe créée avec code généré — code ED8XZCBS
 OK   Test 2.2 — Code inexistant rejeté — HTTP 400
 OK   Test 2.3 — Étudiant rejoint par code (sans compte) — casse et espaces tolérés
 OK   Test 2.4 — Matières consultables par l’étudiant — 0 matière(s)
