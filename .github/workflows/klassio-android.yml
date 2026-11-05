@@ -63,11 +63,11 @@ jobs:
             echo "Journal de compilation — commit $GITHUB_SHA — $(date -u +%FT%TZ)"
             echo "--------------------------------------------------------------"
             grep -E "^(e: |w: |FAILURE|BUILD FAILED|> Task|Caused by|\* What went wrong)" Tchatz-Klassio/android/build.log || tail -200 Tchatz-Klassio/android/build.log
-          } > ci-error.log
+          } > "ci-error-${GITHUB_SHA:0:7}.log"
           git config user.name "Klassio CI"
           git config user.email "ci@tchatz-klassio.local"
-          git add -f ci-error.log
-          git commit -m "ci: journal de compilation (diagnostic)" || true
+          git add -f "ci-error-${GITHUB_SHA:0:7}.log"
+          git commit -m "ci: journal de compilation ${GITHUB_SHA:0:7} (diagnostic)" || true
           git push origin "HEAD:${GITHUB_REF_NAME}" || true
 
       - name: Vérifier l'APK
