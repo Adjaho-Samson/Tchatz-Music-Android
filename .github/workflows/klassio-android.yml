@@ -55,13 +55,20 @@ jobs:
 
       - name: Publier le journal en cas d'échec
         if: failure()
+        continue-on-error: true
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          lines = Path('build.log').read_text(errors='replace').splitlines() if Path('build.log').exists() else []
-          details = '\n'.join(lines[-60:]).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-          print(f'::error title=Échec Gradle::{details}')
-          PY
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          {
+            echo "Journal de compilation — commit $GITHUB_SHA — $(date -u +%FT%TZ)"
+            echo "--------------------------------------------------------------"
+            grep -E "^(e: |w: |FAILURE|BUILD FAILED|> Task|Caused by|\* What went wrong)" Tchatz-Klassio/android/build.log || tail -200 Tchatz-Klassio/android/build.log
+          } > ci-error.log
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add -f ci-error.log
+          git commit -m "ci: journal de compilation (diagnostic)" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
 
       - name: Vérifier l'APK
         run: |
