@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tchatz Klassio</string>
+    <string name="tagline">Tous les documents de ta classe, organisés au même endroit.</string>
+    <string name="channel_documents_name">Nouveaux documents</string>
+    <string name="channel_documents_desc">Notification lorsqu\'un enseignant publie un document</string>
+</resources>

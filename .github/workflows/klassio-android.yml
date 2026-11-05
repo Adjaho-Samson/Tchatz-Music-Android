@@ -1,0 +1,178 @@
+name: Tchatz Klassio — Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'arena/d03515a8-tchatz-music-android'
+      - master
+    paths:
+      - 'Tchatz-Klassio/android/**'
+      - 'Tchatz-Klassio/supabase/**'
+      - '.github/workflows/klassio-android.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'Tchatz-Klassio/android/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Tests, Lint et APK de debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: Tchatz-Klassio/android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Vérifier le SDK Android
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME manquant}"
+          if [[ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ]]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' >/dev/null
+          fi
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Rendre le wrapper exécutable
+        run: chmod +x gradlew
+
+      - name: Compilation et tests unitaires
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest --stacktrace 2>&1 | tee build.log
+
+      - name: Publier le journal en cas d'échec
+        if: failure()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          {
+            echo "Journal de compilation — commit $GITHUB_SHA — $(date -u +%FT%TZ)"
+            echo "--------------------------------------------------------------"
+            grep -E "^(e: |w: |FAILURE|BUILD FAILED|> Task|Caused by|\* What went wrong)" Tchatz-Klassio/android/build.log || tail -200 Tchatz-Klassio/android/build.log
+          } > "ci-error-${GITHUB_SHA:0:7}.log"
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add -f "ci-error-${GITHUB_SHA:0:7}.log"
+          git commit -m "ci: journal de compilation ${GITHUB_SHA:0:7} (diagnostic)" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
+
+      - name: Vérifier l'APK
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$apk"
+          ls -lh "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | head -5
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk"
+
+      - name: Publier l'APK dans une release de test
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="klassio-apk-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Tchatz Klassio — APK $GITHUB_RUN_NUMBER" \
+            --notes "APK de debug compilé automatiquement depuis le commit $GITHUB_SHA." \
+            app/build/outputs/apk/debug/app-debug.apk || true
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
+
+      - name: Publier l'APK dans le dépôt (livrable)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d03515a8-tchatz-music-android'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p Tchatz-Klassio/APK
+          cp Tchatz-Klassio/android/app/build/outputs/apk/debug/app-debug.apk Tchatz-Klassio/APK/Tchatz-Klassio-debug.apk
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add -f Tchatz-Klassio/APK/Tchatz-Klassio-debug.apk
+          git commit -m "build: APK Tchatz Klassio (${GITHUB_SHA:0:7})" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tchatz-klassio-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+  e2e:
+    name: Tests d'intégration réels (backend Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests fonctionnels réels (responsable, étudiant, enseignant, sécurité)
+        env:
+          SUPABASE_URL: https://hohxfwemcvpvtqnwwvds.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_yjOOCQ0FYRA993w5vu2hKg_gPEJlN9H
+        run: |
+          set -o pipefail
+          node Tchatz-Klassio/web/scripts/e2e.mjs 2>&1 | tee e2e.log
+
+      - name: Publier le rapport de tests dans le dépôt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p Tchatz-Klassio/docs
+          {
+            echo "# Rapport de tests — Tchatz Klassio"
+            echo
+            echo "- Date : $(date -u +%FT%TZ)"
+            echo "- Commit : $GITHUB_SHA"
+            echo "- Backend : https://hohxfwemcvpvtqnwwvds.supabase.co"
+            echo
+            echo '```'
+            cat e2e.log 2>/dev/null || echo "(journal indisponible)"
+            echo '```'
+          } > Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
+
+          # Annotations lisibles dans l'onglet du job (max 50)
+          grep -E "^(OK  |KO  |=== )" e2e.log 2>/dev/null | head -50 | while IFS= read -r line; do
+            printf '::notice title=Klassio::%s\n' "$line"
+          done
+
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
+          git commit -m "ci: rapport de tests automatiques" || exit 0
+          for attempt in 1 2 3 4; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" >/dev/null 2>&1 || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "rapport publié (tentative $attempt)"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::warning title=Rapport:: le rapport n'a pas pu être poussé"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: klassio-e2e-report
+          path: e2e.log
+          retention-days: 30

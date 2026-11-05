@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="database" path="klassio.db" />
+    <exclude domain="sharedpref" path="klassio_secure.xml" />
+    <include domain="file" path="documents/" />
+</full-backup-content>

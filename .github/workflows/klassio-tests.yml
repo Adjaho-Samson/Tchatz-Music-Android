@@ -1,0 +1,61 @@
+name: Tchatz Klassio — Tests d'intégration réels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'arena/d03515a8-tchatz-music-android'
+    paths:
+      - 'Tchatz-Klassio/web/scripts/e2e.mjs'
+
+permissions:
+  contents: write
+
+env:
+  SUPABASE_URL: ${{ vars.KLASSIO_SUPABASE_URL || 'https://hohxfwemcvpvtqnwwvds.supabase.co' }}
+  SUPABASE_ANON_KEY: ${{ vars.KLASSIO_SUPABASE_ANON_KEY || 'sb_publishable_yjOOCQ0FYRA993w5vu2hKg_gPEJlN9H' }}
+
+jobs:
+  e2e:
+    name: Parcours complet (responsable, étudiant, enseignant, sécurité)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests fonctionnels réels contre Supabase
+        run: |
+          set -o pipefail
+          node Tchatz-Klassio/web/scripts/e2e.mjs 2>&1 | tee e2e.log
+
+      - name: Publier le rapport de tests dans le dépôt
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "# Rapport de tests Tchatz Klassio"
+            echo
+            echo "- Date : $(date -u +%FT%TZ)"
+            echo "- Commit : $GITHUB_SHA"
+            echo "- Projet Supabase : $SUPABASE_URL"
+            echo
+            echo '```'
+            cat e2e.log
+            echo '```'
+          } > Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
+          git commit -m "ci: rapport de tests automatiques" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: klassio-e2e-report
+          path: e2e.log
+          retention-days: 30
