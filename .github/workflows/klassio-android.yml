@@ -136,8 +136,9 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          set -euo pipefail
+          set -uo pipefail
           cd "$GITHUB_WORKSPACE"
+          mkdir -p Tchatz-Klassio/docs
           {
             echo "# Rapport de tests — Tchatz Klassio"
             echo
@@ -146,15 +147,28 @@ jobs:
             echo "- Backend : https://hohxfwemcvpvtqnwwvds.supabase.co"
             echo
             echo '```'
-            cat e2e.log
+            cat e2e.log 2>/dev/null || echo "(journal indisponible)"
             echo '```'
           } > Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
+
+          # Annotations lisibles dans l'onglet du job (max 50)
+          grep -E "^(OK  |KO  |=== )" e2e.log 2>/dev/null | head -50 | while IFS= read -r line; do
+            printf '::notice title=Klassio::%s\n' "$line"
+          done
+
           git config user.name "Klassio CI"
           git config user.email "ci@tchatz-klassio.local"
           git add Tchatz-Klassio/docs/RAPPORT-TESTS-AUTO.md
-          git commit -m "ci: rapport de tests automatiques" || true
-          git pull --rebase origin "${GITHUB_REF_NAME}" || true
-          git push origin "HEAD:${GITHUB_REF_NAME}" || true
+          git commit -m "ci: rapport de tests automatiques" || exit 0
+          for attempt in 1 2 3 4; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" >/dev/null 2>&1 || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "rapport publié (tentative $attempt)"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::warning title=Rapport:: le rapport n'a pas pu être poussé"
 
       - uses: actions/upload-artifact@v4
         if: always()
