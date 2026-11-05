@@ -93,6 +93,20 @@ jobs:
             app/build/outputs/apk/debug/app-debug.apk || true
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
 
+      - name: Publier l'APK dans le dépôt (livrable)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d03515a8-tchatz-music-android'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p Tchatz-Klassio/APK
+          cp Tchatz-Klassio/android/app/build/outputs/apk/debug/app-debug.apk Tchatz-Klassio/APK/Tchatz-Klassio-debug.apk
+          git config user.name "Klassio CI"
+          git config user.email "ci@tchatz-klassio.local"
+          git add -f Tchatz-Klassio/APK/Tchatz-Klassio-debug.apk
+          git commit -m "build: APK Tchatz Klassio (${GITHUB_SHA:0:7})" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
+
       - uses: actions/upload-artifact@v4
         with:
           name: tchatz-klassio-apk
