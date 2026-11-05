@@ -429,7 +429,7 @@ class KlassioApi(
         http.newCall(request).execute().use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) throw KlassioException.fromHttp(response.code, text)
-            json.decodeFromList(Classroom.serializer(), text)
+            json.decodeFromString<List<Classroom>>(text)
         }
     }
 

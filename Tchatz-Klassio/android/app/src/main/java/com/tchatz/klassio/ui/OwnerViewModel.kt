@@ -161,7 +161,7 @@ class OwnerViewModel(
         viewModelScope.launch {
             try {
                 val result = api.createSubject(token, space.classroom.id, name, description)
-                val base = repo.api.buildConfigWebUrl()
+                val base = api.buildConfigWebUrl()
                 _state.value = _state.value.copy(
                     lastCreatedLink = "$base/p/${result.token}",
                     info = "Matière créée. Partagez le lien avec l'enseignant.",
@@ -180,7 +180,7 @@ class OwnerViewModel(
             try {
                 val newToken = api.rotatePublicationLink(token, subjectId)
                 _state.value = _state.value.copy(
-                    lastCreatedLink = "${repo.api.buildConfigWebUrl()}/p/$newToken",
+                    lastCreatedLink = "${api.buildConfigWebUrl()}/p/$newToken",
                     info = "Nouveau lien généré. L'ancien lien est révoqué.",
                 )
                 openSpace(space.classroom.id)

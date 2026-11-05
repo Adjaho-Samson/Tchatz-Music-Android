@@ -23,7 +23,7 @@ import java.util.TimeZone
 
 class KlassioRepository(
     private val context: Context,
-    private val api: KlassioApi,
+    val api: KlassioApi,
     private val db: KlassioDatabase,
     val store: SessionStore,
 ) {
