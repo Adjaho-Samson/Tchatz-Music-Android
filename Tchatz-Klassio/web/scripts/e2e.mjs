@@ -212,7 +212,11 @@ async function main() {
   const finalize = await fetch(`${SUPABASE_URL}/functions/v1/klassio-file?action=finalize`, {
     method: 'POST',
     headers: { apikey: ANON_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_token: tokenA, document_id: begin.payload.document_id }),
+    body: JSON.stringify({
+      session_token: tokenA,
+      document_id: begin.payload.document_id,
+      file_name: 'chapitre-poo.pdf',
+    }),
   });
   const finalized = await finalize.json().catch(() => ({}));
   check(
@@ -296,7 +300,11 @@ async function main() {
   check('Test 4.6 — Suppression impossible sans être propriétaire', studentDelete.status >= 400);
 
   const invalidSession = await rpc('api_student_classroom', { p_token: 'jeton-invalide' });
-  check('Test 4.7 — Jeton étudiant invalide rejeté', invalidSession.status >= 400);
+  check(
+    'Test 4.7 — Jeton étudiant invalide rejeté',
+    !invalidSession.ok && Boolean(invalidSession.payload?.error),
+    invalidSession.payload?.error,
+  );
 
   // ---------------------------------------------------------------- Test 5
   const signedStudent = await fetch(`${SUPABASE_URL}/functions/v1/klassio-file?action=sign&type=student`, {
@@ -308,7 +316,7 @@ async function main() {
   check(
     'Test 5.1 — URL signée délivrée à l’étudiant de la classe',
     signedStudent.ok && Boolean(signedPayload.signed_url),
-    `${signedPayload.expires_in ?? '?'} s`,
+    signedPayload.signed_url ? `${signedPayload.expires_in} s` : `HTTP ${signedStudent.status} ${signedPayload.error ?? ''}`,
   );
 
   if (signedPayload.signed_url) {
