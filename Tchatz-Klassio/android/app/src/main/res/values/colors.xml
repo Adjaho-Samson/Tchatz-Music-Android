@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette officielle Tchatz Klassio -->
+    <color name="klassio_blue">#2563EB</color>
+    <color name="klassio_navy">#163B70</color>
+    <color name="klassio_white">#FFFFFF</color>
+    <color name="klassio_gray_light">#F3F6FA</color>
+    <color name="klassio_gray_dark">#334155</color>
+    <color name="klassio_ic_launcher_bg">#163B70</color>
+</resources>

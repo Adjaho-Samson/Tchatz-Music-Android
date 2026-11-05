@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TchatzKlassio" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/klassio_white</item>
+        <item name="android:navigationBarColor">@color/klassio_white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/klassio_gray_light</item>
+    </style>
+
+    <style name="Theme.TchatzKlassio.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/klassio_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_klassio_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.TchatzKlassio</item>
+    </style>
+</resources>

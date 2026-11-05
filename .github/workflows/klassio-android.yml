@@ -1,0 +1,93 @@
+name: Tchatz Klassio — Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'arena/d03515a8-tchatz-music-android'
+      - master
+    paths:
+      - 'Tchatz-Klassio/android/**'
+      - 'Tchatz-Klassio/supabase/**'
+      - '.github/workflows/klassio-android.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'Tchatz-Klassio/android/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Tests, Lint et APK de debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: Tchatz-Klassio/android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Vérifier le SDK Android
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME manquant}"
+          if [[ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ]]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' >/dev/null
+          fi
+          test -f "$ANDROID_HOME/platforms/android-35/android.jar"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Rendre le wrapper exécutable
+        run: chmod +x gradlew
+
+      - name: Compilation et tests unitaires
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest --stacktrace 2>&1 | tee build.log
+
+      - name: Publier le journal en cas d'échec
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          lines = Path('build.log').read_text(errors='replace').splitlines() if Path('build.log').exists() else []
+          details = '\n'.join(lines[-60:]).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print(f'::error title=Échec Gradle::{details}')
+          PY
+
+      - name: Vérifier l'APK
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$apk"
+          ls -lh "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | head -5
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk"
+
+      - name: Publier l'APK dans une release de test
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="klassio-apk-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Tchatz Klassio — APK $GITHUB_RUN_NUMBER" \
+            --notes "APK de debug compilé automatiquement depuis le commit $GITHUB_SHA." \
+            app/build/outputs/apk/debug/app-debug.apk || true
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tchatz-klassio-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
