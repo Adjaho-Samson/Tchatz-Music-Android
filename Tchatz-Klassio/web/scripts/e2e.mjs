@@ -300,10 +300,12 @@ async function main() {
   check('Test 4.6 — Suppression impossible sans être propriétaire', studentDelete.status >= 400);
 
   const invalidSession = await rpc('api_student_classroom', { p_token: 'jeton-invalide' });
+  // PostgREST renvoie { code, details, hint, message } : pas de champ « error ».
+  const invalidDetail = invalidSession.payload?.message ?? invalidSession.payload?.error ?? '';
   check(
     'Test 4.7 — Jeton étudiant invalide rejeté',
-    !invalidSession.ok && Boolean(invalidSession.payload?.error),
-    invalidSession.payload?.error,
+    !invalidSession.ok && Boolean(invalidDetail),
+    `HTTP ${invalidSession.status} ${invalidDetail}`.trim(),
   );
 
   // ---------------------------------------------------------------- Test 5
